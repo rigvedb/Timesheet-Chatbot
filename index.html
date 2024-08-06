@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Timesheet Chatbot</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bulma/0.9.3/css/bulma.min.css">
+    <style>
+        .chat-container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .message {
+            margin-bottom: 15px;
+        }
+        .message .message-body {
+            border-radius: 5px;
+            padding: 10px;
+        }
+        .user-message .message-body {
+            background-color: #00d1b2;
+            color: white;
+        }
+        .bot-message .message-body {
+            background-color: #f5f5f5;
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <div id="chat" class="box">
+            <div class="message bot-message">
+                <div class="message-body">
+                    Hi! I'm your timesheet assistant. You can ask me to add, view, or delete timesheets.
+                </div>
+            </div>
+        </div>
+        <div class="field has-addons">
+            <div class="control is-expanded">
+                <input id="messageInput" class="input" type="text" placeholder="Type your message...">
+            </div>
+            <div class="control">
+                <button id="sendButton" class="button is-info">Send</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('sendButton').addEventListener('click', sendMessage);
+        document.getElementById('messageInput').addEventListener('keypress', function(event) {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                sendMessage();
+            }
+        });
+
+        function sendMessage() {
+            var input = document.getElementById('messageInput');
+            var message = input.value.trim(); // Trim whitespace
+            if (!message) return; // Do not send empty messages
+            input.value = '';
+
+            // Display user message
+            var chat = document.getElementById('chat');
+            var userMessageDiv = document.createElement('div');
+            userMessageDiv.classList.add('message', 'user-message');
+            userMessageDiv.innerHTML = `<div class="message-body">${message}</div>`;
+            chat.appendChild(userMessageDiv);
+
+            // Send message to the server and get response
+            fetch('/chatbot/message', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${jwtToken}`
+                },
+                body: JSON.stringify({ message: message }),
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
+                var botMessageDiv = document.createElement('div');
+                botMessageDiv.classList.add('message', 'bot-message');
+                botMessageDiv.innerHTML = `<div class="message-body">${data.response}</div>`;
+                chat.appendChild(botMessageDiv);
+
+                // Scroll chat to the bottom
+                chat.scrollTop = chat.scrollHeight;
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                // Optionally, display an error message to the user
+            });
+        }
+    </script>
+</body>
+</html>
